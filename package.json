@@ -1,0 +1,28 @@
+{
+  "name": "musicplayer",
+  "version": "0.0.1",
+  "description": "Play music or download from yt",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "electron ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Redstonerayy/musicplayer.git"
+  },
+  "keywords": [
+    "electron",
+    "ytdl-core",
+    "music"
+  ],
+  "author": "Redstonerayy",
+  "license": "GPL-3.0-or-later",
+  "bugs": {
+    "url": "https://github.com/Redstonerayy/musicplayer/issues"
+  },
+  "homepage": "https://github.com/Redstonerayy/musicplayer#readme",
+  "dependencies": {
+    "electron": "^11.1.1"
+  }
+}
