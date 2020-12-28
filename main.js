@@ -6,7 +6,7 @@ const { app, BrowserWindow } = require('electron')
                       FUNCTIONS
 ============================================================== */
 
-function createWindow (w, h, f, htmlfile) {
+function createWindow (w, h, f, d, htmlfile) {
   let win = new BrowserWindow({
     width: w,
     height: h,
@@ -17,7 +17,9 @@ function createWindow (w, h, f, htmlfile) {
   })
 
   win.loadFile("index.html");
-  //win.openDevTools();
+  if(d){
+    win.openDevTools();
+  }
   return win;
 }
 
@@ -26,10 +28,11 @@ function createWindow (w, h, f, htmlfile) {
                       MY APP
 ============================================================== */
 
-/* launch */
+/* create main window  */
+
 
 app.on('ready', () => {
-    mainwindow = createWindow(1000, 800, true, "index.html");
+    mainwindow = createWindow(1000, 800, true, true, "index.html");
     // make quit condition
     mainwindow.on('close', () => {
       if(process.platform !== 'darwin'){
