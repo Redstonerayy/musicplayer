@@ -12,7 +12,7 @@ exportpath = "";
 ============================================================== */
 
 
-// TODO: play, pause, resume, volume, loop, random, timestamp, songtext
+// TODO: play, pause, resume, volume, loop, random
 
 
 
