@@ -17,7 +17,7 @@ fileextregex = RegExp(".mp3|.mpeg|.opus|.ogg|.oga|.wav|.aac|.caf|.m4a|.mp4|.weba
 
 function updatefilenames(path) {
   let temp = []
-  fs.readdir(path, {withFileTypes: true}, (err, filesnames) => {
+  fs.readdir(path, {withFileTypes: true}, (err, filenames) => {
     filenames.forEach((item) => {
       fs.stat(item["name"], (err, stats) => {
         if(stats.isFile()){
@@ -42,6 +42,7 @@ function updateslider(){
     progressslider[0].value = songtime;
     previoustime = songtime;
   }
+  console.log(previoustime);
   timeleft.innerHTML = converttimeformat(previoustime);
 }
 
@@ -49,14 +50,17 @@ function converttimeformat(timesec) {
   if(timesec != 0){
     min = Math.ceil(timesec/60) - 1;
     sec = timesec - (min * 60);
-    return min.toString() + ":" + sec.toString();
+    sep = ":"
+    if(sec < 10){
+      sep += "0";
+    }
+    return min.toString() + sep + sec.toString();
   } else {
     return "0:00";
   }
 }
 
 function exportaszip() {
-
 }
 
 
@@ -76,7 +80,6 @@ function song(filename, slider){
   }).on('load', () => {
     //get duration and set range slider
     this.duration = this.song._duration;
-
     timeright.innerHTML = converttimeformat(Math.ceil(this.duration));
     if(slider){
       progressslider[0].max = Math.ceil(this.duration);
@@ -144,11 +147,23 @@ timeright = document.getElementById('time-right');
 
 
 /* variables  */
+//current_song = null;
 current_song = new song("hateme.mp4", true);
+
+//get files
+files = [];
+updatefilenames(musicfolderpath);
+
+/* ==============================================================
+                      INTERVALS
+============================================================== */
+
+
+//update slider
 previoustime = 0;
-files;
-getfilenames(musicfolderpath);
-setInterval(updateslider, 250);
+sliderupdate = setInterval(updateslider, 250);
+
+//update files in directory
 setInterval(updatefilenames, 5000, musicfolderpath);
 
 
