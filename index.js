@@ -11,9 +11,32 @@ exportpath = "";
                       FUNCTIONS
 ============================================================== */
 
+function exportaszip() {
 
-// TODO: play, pause, resume, volume, loop, random
+}
 
+function updateslider(){
+  slidervalue = progressslider[0].value;
+  if(slidervalue != previoustime){
+    current_song.settime(slidervalue)
+    previoustime = slidervalue;
+  } else {
+    songtime = Math.round(current_song.gettime());
+    progressslider[0].value = songtime;
+    previoustime = songtime;
+  }
+  timeleft.innerHTML = converttimeformat(previoustime);
+}
+
+function converttimeformat(timesec) {
+  if(timesec != 0){
+    min = Math.ceil(timesec/60) - 1;
+    sec = timesec - (min * 60);
+    return min.toString() + ":" + sec.toString();
+  } else {
+    return "0:00";
+  }
+}
 
 
 /* ==============================================================
@@ -32,6 +55,8 @@ function song(filename, slider){
   }).on('load', () => {
     //get duration and set range slider
     this.duration = this.song._duration;
+
+    timeright.innerHTML = converttimeformat(Math.ceil(this.duration));
     if(slider){
       progressslider[0].max = Math.ceil(this.duration);
     }
@@ -73,6 +98,10 @@ function song(filename, slider){
   this.settime = (seconds) => {
     this.song.seek(seconds);
   }
+
+  this.gettime = () => {
+    return this.song.seek();
+  }
 }
 
 
@@ -89,9 +118,14 @@ playbutton = document.getElementById('pause-resume-play');
 nextbutton = document.getElementById('next');
 randombutton = document.getElementById('random');
 progressslider = document.getElementsByClassName('slider-play-control');
+timeleft = document.getElementById('time-left');
+timeright = document.getElementById('time-right');
+
 
 /* variables  */
 current_song = new song("hateme.mp4", true);
+previoustime = 0;
+setInterval(updateslider, 250);
 
 
 /* ==============================================================
