@@ -39,6 +39,7 @@ html, body {
   left: 20px;
   color: black;
   font-size: inherit;
+  outline: none;
 }
 
 .header > button {

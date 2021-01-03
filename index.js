@@ -24,17 +24,26 @@ exportpath = "";
 // plays the current song and makes pause usw. possible
 // there will only one song, the current song that is played
 // wrapped Howl methods in my own class
-function song(filename){
+
+function song(filename, slider){
+  //init
   this.song = new Howl({
     src: [filename]
+  }).on('load', () => {
+    //get duration and set range slider
+    this.duration = this.song._duration;
+    if(slider){
+      progressslider[0].max = Math.ceil(this.duration);
+    }
   });
-  this.duration = this.song.duration();
 
   //methods
-  this.playorresume = () => {
-    this.song.once('load', () => {
+  this.playpauseresume = () => {
+    if(!current_song.song.playing()){
       this.song.play();
-    });
+    } else {
+      this.pause(false);
+    }
   }
 
   this.pause = (reset) => {
@@ -73,15 +82,46 @@ function song(filename){
 
 
 /* dump  */
-button = document.getElementById('export');
+exportbutton = document.getElementById('export');
+loopbutton = document.getElementById('loop');
+previousbutton = document.getElementById('previous');
+playbutton = document.getElementById('pause-resume-play');
+nextbutton = document.getElementById('next');
+randombutton = document.getElementById('random');
+progressslider = document.getElementsByClassName('slider-play-control');
+
+/* variables  */
+current_song = new song("hateme.mp4", true);
 
 
+/* ==============================================================
+                      CLICK EVENT LISTENERS
+============================================================== */
 
 
-button.addEventListener('click', () => {
-  var sound = new Howl({
-    src: ['hateme.mp4']
-  });
-  sound.play();
-  Howler.volume(0.1);
+exportbutton.addEventListener('click', () => {
+  exportaszip();
+});
+
+/* control bar  */
+
+loopbutton.addEventListener('click', () => {
+  current_song.loop(true);
+});
+
+previousbutton.addEventListener('click', () => {
+
+});
+
+playbutton.addEventListener('click', () => {
+  //Howler.volume(0.1);
+  current_song.playpauseresume();
+});
+
+nextbutton.addEventListener('click', () => {
+
+});
+
+randombutton.addEventListener('click', () => {
+
 });
