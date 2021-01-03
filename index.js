@@ -1,19 +1,36 @@
 /* requirements  */
 const fs = require('fs');
+const os = require('os');
 var { Howl, Howler } = require('howler'); //using const causes an error
 
+
 /* config */
-musicfolderpath = "";
-exportpath = "";
+musicfolderpath = __dirname; // ""
+exportpath = os.homedir();
+fileextregex = RegExp(".mp3|.mpeg|.opus|.ogg|.oga|.wav|.aac|.caf|.m4a|.mp4|.weba|.webm|.dolby|.flac");
 
 
 /* ==============================================================
                       FUNCTIONS
 ============================================================== */
 
-function exportaszip() {
 
+function updatefilenames(path) {
+  let temp = []
+  fs.readdir(path, {withFileTypes: true}, (err, filesnames) => {
+    filenames.forEach((item) => {
+      fs.stat(item["name"], (err, stats) => {
+        if(stats.isFile()){
+          if(fileextregex.test(item["name"])){
+            files.push(item["name"]);
+          }
+        }
+      });
+    });
+  });
+  files = temp;
 }
+
 
 function updateslider(){
   slidervalue = progressslider[0].value;
@@ -36,6 +53,10 @@ function converttimeformat(timesec) {
   } else {
     return "0:00";
   }
+}
+
+function exportaszip() {
+
 }
 
 
@@ -125,13 +146,18 @@ timeright = document.getElementById('time-right');
 /* variables  */
 current_song = new song("hateme.mp4", true);
 previoustime = 0;
+files;
+getfilenames(musicfolderpath);
 setInterval(updateslider, 250);
+setInterval(updatefilenames, 5000, musicfolderpath);
 
 
 /* ==============================================================
                       CLICK EVENT LISTENERS
 ============================================================== */
 
+
+/* export as zip  */
 
 exportbutton.addEventListener('click', () => {
   exportaszip();
