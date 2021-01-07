@@ -76,6 +76,25 @@ html, body {
   border-bottom: 2px solid black;
 }
 
+/* drag and drop  */
+
+.song-widget {
+  width: 100%;
+  position: relative;
+}
+
+.song-widget > span {
+  font-size: 20px; /* + 2px + 1px between span and div at top */
+}
+
+.song-widget > img {
+  width: 23px;
+  height: 23px;
+  position: absolute;
+  bottom: 0;
+  right: 0;
+}
+
 
 /* ==============================================================
                       PLAY

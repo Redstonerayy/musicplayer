@@ -14,6 +14,7 @@ fileextregex = RegExp(".mp3|.mpeg|.opus|.ogg|.oga|.wav|.aac|.caf|.m4a|.mp4|.weba
                       FUNCTIONS
 ============================================================== */
 
+/* Intervals  */
 
 function updatefilenames(path) {
   let temp = []
@@ -33,18 +34,23 @@ function updatefilenames(path) {
 
 
 function updateslider(){
-  slidervalue = progressslider[0].value;
-  if(slidervalue != previoustime){
-    current_song.settime(slidervalue)
-    previoustime = slidervalue;
-  } else {
-    songtime = Math.round(current_song.gettime());
-    progressslider[0].value = songtime;
-    previoustime = songtime;
+  if(current_song != null){
+    slidervalue = progressslider[0].value;
+    if(slidervalue != previoustime){
+      current_song.settime(slidervalue)
+      previoustime = slidervalue;
+    } else {
+      songtime = Math.round(current_song.gettime());
+      progressslider[0].value = songtime;
+      previoustime = songtime;
+    }
+    console.log(previoustime);
+    timeleft.innerHTML = converttimeformat(previoustime);
   }
-  console.log(previoustime);
-  timeleft.innerHTML = converttimeformat(previoustime);
 }
+
+
+/* Utility  */
 
 function converttimeformat(timesec) {
   if(timesec != 0){
@@ -61,6 +67,104 @@ function converttimeformat(timesec) {
 }
 
 function exportaszip() {
+}
+
+function readplaylistdata(filename){
+  fs.readFile(filename, "utf8", (err, data) => {
+    //get lines
+    var lines = data.split(/\r?\n/);
+    lines = lines.filter(line => line != "");
+    //write in object
+    key = null;
+    playlists = {};
+    lines.forEach((item) => {
+      if(item.slice(0,1) == "#"){//sign for a playlist
+        if(!playlists.hasOwnProperty(item.slice(1))){
+          playlists[item.slice(1)] = [];
+        }
+        key = item.slice(1);//the following belong to this playlist(key) until the next #
+      } else if(key != null) {
+        if(!(playlists[key].includes(item))){
+          playlists[key].push(item);
+        }
+      } else{
+        //some idiot put lines at the start
+      }
+    });
+    //console.log(playlists); //debug xD
+  });
+}
+
+/* GUI  */
+
+function songwidget(parent, songname){
+  let songdiv = document.createElement("div");
+  songdiv.id = songname;
+  songdiv.className = "song-widget";
+  //append events
+  songdiv.draggable = true;
+  songdiv.ondragstart = dragstart;
+  songdiv.ondragover = dragover;
+  songdiv.ondrop = droponsong;
+  //title
+  let songtitle = document.createElement("span");
+  songtitle.innerHTML = songname;
+  songtitle.style.color = "white";
+  //image
+  let kebabmenu = document.createElement("img");
+  kebabmenu.src = "images/kebabmenu.png";
+  //append elements
+  songdiv.appendChild(songtitle);
+  songdiv.appendChild(kebabmenu);
+  parent.appendChild(songdiv);
+}
+
+/* events for drag and drop  */
+
+function dragover(ev) {
+  ev.preventDefault(); //normally you can`t drop an element into another
+}
+
+function dragstart(ev) {
+  //use id to later access and clone the dragged element
+  if(ev.target.id == ""){
+    ev.target.id = "drag";
+    ev.dataTransfer.setData("id", "drag");
+  } else {
+    ev.dataTransfer.setData("id", ev.target.id);
+  }
+}
+
+function droponplay(ev, el) {
+  ev.preventDefault(); //default ondrop is open as link
+  if(ev.target == el){//only when directly dropped on this
+    let insertelement = document.getElementById(ev.dataTransfer.getData("id")).cloneNode(true);//clones
+    if(insertelement.id = "drag"){
+      insertelement.id = "";
+      document.getElementById("drag").id = "";
+    } else {
+      insertelement.id = "";
+    }
+    el.appendChild(insertelement); //append as last to target element
+  }
+}
+
+function droponsong(ev){
+  console.log(document.getElementById(ev.dataTransfer.getData("id")).parentNode.className);
+  if(ev.target.tagName != "DIV"){
+    var el = ev.target.parentNode;
+  } else {
+    var el = ev.target;
+  }
+  if(document.getElementById(ev.dataTransfer.getData("id")).parentNode.className == "playlist"){
+    var insertelement = document.getElementById(ev.dataTransfer.getData("id")).cloneNode(true);//does clone
+  } else {
+    var insertelement = document.getElementById(ev.dataTransfer.getData("id"));//does not clone
+  }
+  if(insertelement.id = "drag"){
+    insertelement.id = "";
+  }
+  el.parentNode.insertBefore(insertelement, el.nextSibling); //append after target element
 }
 
 
@@ -147,12 +251,16 @@ timeright = document.getElementById('time-right');
 
 
 /* variables  */
-//current_song = null;
-current_song = new song("hateme.mp4", true);
+current_song = null;
+//current_song = new song("hateme.mp4", true)
 
 //get files
 files = [];
 updatefilenames(musicfolderpath);
+
+//get plalists
+//playlists = readplaylistdata("playlists.txt");
+
 
 /* ==============================================================
                       INTERVALS
@@ -161,10 +269,13 @@ updatefilenames(musicfolderpath);
 
 //update slider
 previoustime = 0;
-sliderupdate = setInterval(updateslider, 250);
+sliderupdate = setInterval(updateslider, 500);
 
 //update files in directory
-setInterval(updatefilenames, 5000, musicfolderpath);
+//setInterval(updatefilenames, 5000, musicfolderpath);
+
+//update playlists
+
 
 
 /* ==============================================================

@@ -15,7 +15,7 @@
     <!-- Player on the left with song display and control panel -->
     <div id="play" class="player">
       <p>Play</p>
-      <div class="play-song-display">
+      <div class="play-song-display" ondrop="droponplay(event, this)" ondragover="dragover(event)">
 
       </div>
       <div class="play-control">
@@ -44,7 +44,7 @@
     </div>
 
     <!-- Playlist on the right side -->
-    <div id="playlists" class="player">
+    <div id="playlists" class="player" ondragover="dragover(event)">
       <p>Playlist</p>
     </div>
 
