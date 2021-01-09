@@ -127,44 +127,68 @@ function dragover(ev) {
 
 function dragstart(ev) {
   //use id to later access and clone the dragged element
+  /* every element has an unique id
   if(ev.target.id == ""){
     ev.target.id = "drag";
     ev.dataTransfer.setData("id", "drag");
   } else {
     ev.dataTransfer.setData("id", ev.target.id);
   }
+  */
+  ev.dataTransfer.setData("id", ev.target.id);
 }
 
-function droponplay(ev, el) {
+function droponplay(ev, target) {
   ev.preventDefault(); //default ondrop is open as link
-  if(ev.target == el){//only when directly dropped on this
+  if(ev.target == target){//only when directly dropped on this
     let insertelement = document.getElementById(ev.dataTransfer.getData("id")).cloneNode(true);//clones
+    // all elements need a unique id. to be able to retrieve the song name, the
+    // syntax is songname.clonenumber
+    songwidgetcount[insertelement.id] += 1;
+    insertelement.id += "." + (songwidget[insertelement.id]).toString();
     if(insertelement.id = "drag"){
       insertelement.id = "";
       document.getElementById("drag").id = "";
     } else {
       insertelement.id = "";
     }
-    el.appendChild(insertelement); //append as last to target element
+    //add to queqe
+    queqe.addsong(insertelement.id);
+    target.appendChild(insertelement); //append as last to target element
   }
 }
 
 function droponsong(ev){
   console.log(document.getElementById(ev.dataTransfer.getData("id")).parentNode.className);
   if(ev.target.tagName != "DIV"){
-    var el = ev.target.parentNode;
+    var target = ev.target.parentNode;
   } else {
-    var el = ev.target;
+    var target = ev.target;
   }
   if(document.getElementById(ev.dataTransfer.getData("id")).parentNode.className == "playlist"){
     var insertelement = document.getElementById(ev.dataTransfer.getData("id")).cloneNode(true);//does clone
+    songwidgetcount[insertelement.id] += 1;
+    insertelement.id += "." + (songwidget[insertelement.id]).toString();
+    var remove = false;//if the song is moved and needs to be removed from play queqe
   } else {
     var insertelement = document.getElementById(ev.dataTransfer.getData("id"));//does not clone
+    var remove = true;
   }
-  if(insertelement.id = "drag"){
-    insertelement.id = "";
+  //if(insertelement.id = "drag"){//useless, all songs have full filename as id
+  //  insertelement.id = "";
+  //}
+  //add to queqe
+  if(remove){
+    let songdivs = target.parentNode.children;
+    for (var i = 0; i < songdivs.length; i++) {
+      if(songdivs[i].id = insertelement.id){
+        //queqe.removesong();
+        //queqe.addsong()
+      }
+    }
   }
-  el.parentNode.insertBefore(insertelement, el.nextSibling); //append after target element
+
+  target.parentNode.insertBefore(insertelement, target.nextSibling); //append after target element
 }
 
 
@@ -179,6 +203,7 @@ function droponsong(ev){
 
 function song(filename, slider){
   //init
+  previoustime = 0;
   this.song = new Howl({
     src: [filename]
   }).on('load', () => {
@@ -233,6 +258,85 @@ function song(filename, slider){
 }
 
 
+// queqe class to bundle all queqe functions
+function queqe(){
+  //init
+  this.playqueqe = [];
+  this.currentindex = 0;
+  this.loopatend = false;
+  this.randomplayatend = false;
+
+  //basic methods
+  //manipulation
+  this.addsong = (song, index) => {
+    if(index){
+      this.playqueqe.splice(song, 0, index);
+      if(index <= this.currentindex){
+        this.currentindex += 1;
+      }
+    } else {
+      this.playqueqe.push(song);
+    }
+  }
+
+  this.appendlist = (list) => {
+    for (let i = 0; i < list.length; i++) {
+      this.playqueqe.push(list[i]);
+    }
+  }
+
+  this.removesong = (songname, index, all) => {
+    if(all){
+      var removedbeforecurrentindex = 0;
+      let newqueqe = this.playqueqe.filter((song, i) => {
+        if(song != songname){
+          return true;
+        } else {
+          if(i < this.currentindex){
+            removedbeforecurrentindex += 1;
+          } else if(i == this.currentindex){
+            //play next song
+          }
+          return false;
+        }
+      });
+      this.currentindex -= removedbeforecurrentindex;
+      this.playqueqe = newqueqe;
+
+    } else {
+      if(index < this.currentindex){
+        this.currentindex -= 1;
+      } else if(index == this.currentindex){
+        //play next song
+      }
+      this.playqueqe.splice(index, 1);
+    }
+  }
+
+  this.clearqueqe = (removecurrentsong) => {
+    if(removecurrentsong){
+      current_song.unload();
+      current_song = null;
+    }
+    this.playqueqe = [];
+  }
+
+  //info
+  this.currentsongname = () => {
+    return this.playqueqe[this.currentindex];
+  }
+
+  this.remainingsongs = () => {
+    //excludes current song
+    return [this.playqueqe.length - this.currentindex - 1, this.playqueqe.slice(this.currentindex + 1)];
+  }
+
+  this.previoussongs = () => {
+    return [this.currentindex, this.playqueqe.slice(0, this.currentindex)];
+  }
+}
+
+
 /* ==============================================================
                       APP
 ============================================================== */
@@ -252,7 +356,8 @@ timeright = document.getElementById('time-right');
 
 /* variables  */
 current_song = null;
-//current_song = new song("hateme.mp4", true)
+songwidgetcount = {}
+queqe = queqe();
 
 //get files
 files = [];
@@ -272,10 +377,9 @@ previoustime = 0;
 sliderupdate = setInterval(updateslider, 500);
 
 //update files in directory
-//setInterval(updatefilenames, 5000, musicfolderpath);
+setInterval(updatefilenames, 5000, musicfolderpath);
 
 //update playlists
-
 
 
 /* ==============================================================
