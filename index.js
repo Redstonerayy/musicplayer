@@ -5,7 +5,8 @@ var { Howl, Howler } = require('howler'); //using const causes an error
 
 
 /* config */
-musicfolderpath = __dirname; // ""
+console.log(__dirname);
+musicfolderpath = __dirname + "/video/"; // ""
 exportpath = os.homedir();
 fileextregex = RegExp(".mp3|.mpeg|.opus|.ogg|.oga|.wav|.aac|.caf|.m4a|.mp4|.weba|.webm|.dolby|.flac");
 
@@ -17,19 +18,38 @@ fileextregex = RegExp(".mp3|.mpeg|.opus|.ogg|.oga|.wav|.aac|.caf|.m4a|.mp4|.weba
 /* Intervals  */
 
 function updatefilenames(path) {
-  let temp = []
-  fs.readdir(path, {withFileTypes: true}, (err, filenames) => {
-    filenames.forEach((item) => {
-      fs.stat(item["name"], (err, stats) => {
-        if(stats.isFile()){
-          if(fileextregex.test(item["name"])){
-            files.push(item["name"]);
+  new Promise((resolve, reject) => {
+    let temp = [];
+    fs.readdir(path, {withFileTypes: true}, (err, filenames) => {
+      if(err){
+        reject("Error reading directory");
+      }
+      filenames.forEach((item) => {
+        fs.stat(path + item["name"], (err, stats) => {
+          if(stats.isFile()){
+            if(fileextregex.test(item["name"])){
+              temp.push(item["name"]);
+            }
           }
-        }
+        });
       });
+      resolve(temp);
     });
-  });
-  files = temp;
+  }).then((filenames) => {
+    if(files == filenames){
+    } else {//update all songs GUI
+      let newfiles = filenames.filter(file => !files.includes(file));
+      let removedfiles = files.filter(file => !filenames.includes(file));
+      for (var i = 0; i < removedfiles.length; i++) {
+        allsongs.removesongwidget(allsongs, removedfiles[i]);
+      }
+      for (var i = 0; i < newfiles.length; i++) {
+        songwidget(newfiles[i]);
+      }
+    }
+    files = filenames;
+  })
+  .catch(error => console.log(error));
 }
 
 
@@ -44,7 +64,6 @@ function updateslider(){
       progressslider[0].value = songtime;
       previoustime = songtime;
     }
-    console.log(previoustime);
     timeleft.innerHTML = converttimeformat(previoustime);
   }
 }
@@ -108,7 +127,7 @@ function songwidget(parent, songname){
   songdiv.ondrop = droponsong;
   //title
   let songtitle = document.createElement("span");
-  songtitle.innerHTML = songname;
+  songtitle.innerHTML = songname.split(".")[0];
   songtitle.style.color = "white";
   //image
   let kebabmenu = document.createElement("img");
@@ -119,6 +138,13 @@ function songwidget(parent, songname){
   parent.appendChild(songdiv);
 }
 
+function removesongwidget(songname){
+  document.getElementById(songname).remove();
+  for(let i = 1; i < songwidgetcount + 1; i++){
+    document.getElementById(songname + "." + (i).toString()).remove();
+  }
+}
+
 /* events for drag and drop  */
 
 function dragover(ev) {
@@ -126,15 +152,6 @@ function dragover(ev) {
 }
 
 function dragstart(ev) {
-  //use id to later access and clone the dragged element
-  /* every element has an unique id
-  if(ev.target.id == ""){
-    ev.target.id = "drag";
-    ev.dataTransfer.setData("id", "drag");
-  } else {
-    ev.dataTransfer.setData("id", ev.target.id);
-  }
-  */
   ev.dataTransfer.setData("id", ev.target.id);
 }
 
@@ -145,7 +162,7 @@ function droponplay(ev, target) {
     // all elements need a unique id. to be able to retrieve the song name, the
     // syntax is songname.clonenumber
     songwidgetcount[insertelement.id] += 1;
-    insertelement.id += "." + (songwidget[insertelement.id]).toString();
+    insertelement.id += "." + (songwidgetcount[insertelement.id]).toString();
     if(insertelement.id = "drag"){
       insertelement.id = "";
       document.getElementById("drag").id = "";
@@ -174,18 +191,13 @@ function droponsong(ev){
     var insertelement = document.getElementById(ev.dataTransfer.getData("id"));//does not clone
     var remove = true;
   }
-  //if(insertelement.id = "drag"){//useless, all songs have full filename as id
-  //  insertelement.id = "";
-  //}
   //add to queqe
   if(remove){
     let songdivs = target.parentNode.children;
-    for (var i = 0; i < songdivs.length; i++) {
-      if(songdivs[i].id = insertelement.id){
-        //queqe.removesong();
-        //queqe.addsong()
-      }
-    }
+    droppedon = songdivs.indexOf(target);
+    indexel = songdivs.indexOf(insertelement);
+    queqe.removesong(indexel);
+    queqe.addsong(insertelement.id.split(".")[0], droppedon + 1);
   }
 
   target.parentNode.insertBefore(insertelement, target.nextSibling); //append after target element
@@ -349,22 +361,30 @@ previousbutton = document.getElementById('previous');
 playbutton = document.getElementById('pause-resume-play');
 nextbutton = document.getElementById('next');
 randombutton = document.getElementById('random');
+
 progressslider = document.getElementsByClassName('slider-play-control');
 timeleft = document.getElementById('time-left');
 timeright = document.getElementById('time-right');
 
+allsongs = document.getElementById("all-songs");
+playqueqediv = document.getElementById("play-song-control");
 
 /* variables  */
 current_song = null;
 songwidgetcount = {}
 queqe = queqe();
 
+//get plalists
+//playlists = readplaylistdata("playlists.txt");
+allsongs = document.getElementById("allsongs");
+
 //get files
 files = [];
 updatefilenames(musicfolderpath);
 
-//get plalists
-//playlists = readplaylistdata("playlists.txt");
+
+
+
 
 
 /* ==============================================================
