@@ -5,7 +5,6 @@ var { Howl, Howler } = require('howler'); //using const causes an error
 
 
 /* config */
-console.log(__dirname);
 musicfolderpath = __dirname + "/video/"; // ""
 exportpath = os.homedir();
 fileextregex = RegExp(".mp3|.mpeg|.opus|.ogg|.oga|.wav|.aac|.caf|.m4a|.mp4|.weba|.webm|.dolby|.flac");
@@ -18,22 +17,19 @@ fileextregex = RegExp(".mp3|.mpeg|.opus|.ogg|.oga|.wav|.aac|.caf|.m4a|.mp4|.weba
 /* Intervals  */
 
 function updatefilenames(path) {
-  new Promise((resolve, reject) => {
-    let temp = [];
+  let promfilenames = new Promise((resolve, reject) => {
     fs.readdir(path, {withFileTypes: true}, (err, filenames) => {
-      if(err){
-        reject("Error reading directory");
+      /*
+      //haven`t found a way to check if there are only files
+      //i assume all files are music files
+      for (let i = 0; i < a.length; i++) {
+        console.log(path);
+        if(isFile(path + a[i].name)){
+          temp.push(a[i]);
+        }
       }
-      filenames.forEach((item) => {
-        fs.stat(path + item["name"], (err, stats) => {
-          if(stats.isFile()){
-            if(fileextregex.test(item["name"])){
-              temp.push(item["name"]);
-            }
-          }
-        });
-      });
-      resolve(temp);
+      */
+      resolve(filenames.map(file => file.name));
     });
   }).then((filenames) => {
     if(files == filenames){
@@ -41,17 +37,16 @@ function updatefilenames(path) {
       let newfiles = filenames.filter(file => !files.includes(file));
       let removedfiles = files.filter(file => !filenames.includes(file));
       for (var i = 0; i < removedfiles.length; i++) {
-        allsongs.removesongwidget(allsongs, removedfiles[i]);
+        removesongwidgets(removedfiles[i]);
       }
       for (var i = 0; i < newfiles.length; i++) {
-        songwidget(newfiles[i]);
+        songwidget(allsongs, newfiles[i]);
       }
     }
     files = filenames;
   })
   .catch(error => console.log(error));
 }
-
 
 function updateslider(){
   if(current_song != null){
@@ -138,7 +133,7 @@ function songwidget(parent, songname){
   parent.appendChild(songdiv);
 }
 
-function removesongwidget(songname){
+function removesongwidgets(songname){
   document.getElementById(songname).remove();
   for(let i = 1; i < songwidgetcount + 1; i++){
     document.getElementById(songname + "." + (i).toString()).remove();
@@ -155,28 +150,27 @@ function dragstart(ev) {
   ev.dataTransfer.setData("id", ev.target.id);
 }
 
-function droponplay(ev, target) {
+function droponplay(ev, self) {
   ev.preventDefault(); //default ondrop is open as link
-  if(ev.target == target){//only when directly dropped on this
-    let insertelement = document.getElementById(ev.dataTransfer.getData("id")).cloneNode(true);//clones
-    // all elements need a unique id. to be able to retrieve the song name, the
-    // syntax is songname.clonenumber
-    songwidgetcount[insertelement.id] += 1;
-    insertelement.id += "." + (songwidgetcount[insertelement.id]).toString();
-    if(insertelement.id = "drag"){
-      insertelement.id = "";
-      document.getElementById("drag").id = "";
+  if(ev.target == self){//only when directly dropped on this
+    if(document.getElementById(ev.dataTransfer.getData("id")).parentNode.className == "playlist"){
+      var insertelement = document.getElementById(ev.dataTransfer.getData("id")).cloneNode(true);//does clone
+      // all elements need a unique id. to be able to retrieve the song name, the
+      // syntax is songname.clonenumber
+      songwidgetcount[insertelement.id] += 1;
+      insertelement.id += "." + (songwidgetcount[insertelement.id]).toString();
+      var remove = false;//if the song is moved and needs to be removed from play queqe
     } else {
-      insertelement.id = "";
+      var insertelement = document.getElementById(ev.dataTransfer.getData("id"));//does not clone
+      var remove = true;
     }
     //add to queqe
     queqe.addsong(insertelement.id);
-    target.appendChild(insertelement); //append as last to target element
+    self.appendChild(insertelement); //append as last to target element
   }
 }
 
 function droponsong(ev){
-  console.log(document.getElementById(ev.dataTransfer.getData("id")).parentNode.className);
   if(ev.target.tagName != "DIV"){
     var target = ev.target.parentNode;
   } else {
@@ -185,7 +179,7 @@ function droponsong(ev){
   if(document.getElementById(ev.dataTransfer.getData("id")).parentNode.className == "playlist"){
     var insertelement = document.getElementById(ev.dataTransfer.getData("id")).cloneNode(true);//does clone
     songwidgetcount[insertelement.id] += 1;
-    insertelement.id += "." + (songwidget[insertelement.id]).toString();
+    insertelement.id += "." + (songwidgetcount[insertelement.id]).toString();
     var remove = false;//if the song is moved and needs to be removed from play queqe
   } else {
     var insertelement = document.getElementById(ev.dataTransfer.getData("id"));//does not clone
@@ -197,7 +191,7 @@ function droponsong(ev){
     droppedon = songdivs.indexOf(target);
     indexel = songdivs.indexOf(insertelement);
     queqe.removesong(indexel);
-    queqe.addsong(insertelement.id.split(".")[0], droppedon + 1);
+    queqe.addsong(insertelement.id, droppedon + 1);
   }
 
   target.parentNode.insertBefore(insertelement, target.nextSibling); //append after target element
@@ -213,7 +207,7 @@ function droponsong(ev){
 // there will only one song, the current song that is played
 // wrapped Howl methods in my own class
 
-function song(filename, slider){
+function song(filename){
   //init
   previoustime = 0;
   this.song = new Howl({
@@ -222,9 +216,7 @@ function song(filename, slider){
     //get duration and set range slider
     this.duration = this.song._duration;
     timeright.innerHTML = converttimeformat(Math.ceil(this.duration));
-    if(slider){
-      progressslider[0].max = Math.ceil(this.duration);
-    }
+    progressslider[0].max = Math.ceil(this.duration);
   });
 
   //methods
@@ -279,7 +271,14 @@ function queqe(){
   this.randomplayatend = false;
 
   //basic methods
-  //manipulation
+  //play
+  this.setcurrentsong = () => {
+    console.log(musicfolderpath + this.currentsongname(false));
+    current_song = new song(musicfolderpath + this.currentsongname(false));
+    current_song.playpauseresume();
+  }
+
+  //queqe manipulation
   this.addsong = (song, index) => {
     if(index){
       this.playqueqe.splice(song, 0, index);
@@ -334,8 +333,13 @@ function queqe(){
   }
 
   //info
-  this.currentsongname = () => {
-    return this.playqueqe[this.currentindex];
+  this.currentsongname = (id) => {
+    if(id){
+      return this.playqueqe[this.currentindex];
+    } else {
+      splittedsongid = this.playqueqe[this.currentindex].split(".");
+      return splittedsongid[0] + "." + splittedsongid[1];
+    }
   }
 
   this.remainingsongs = () => {
@@ -366,25 +370,21 @@ progressslider = document.getElementsByClassName('slider-play-control');
 timeleft = document.getElementById('time-left');
 timeright = document.getElementById('time-right');
 
-allsongs = document.getElementById("all-songs");
-playqueqediv = document.getElementById("play-song-control");
+allsongs = document.getElementById("allsongs");
+playqueqediv = document.getElementById("play-song-display");
 
 /* variables  */
 current_song = null;
 songwidgetcount = {}
-queqe = queqe();
+queqe = new queqe();
+
 
 //get plalists
 //playlists = readplaylistdata("playlists.txt");
-allsongs = document.getElementById("allsongs");
 
 //get files
 files = [];
 updatefilenames(musicfolderpath);
-
-
-
-
 
 
 /* ==============================================================
@@ -424,8 +424,13 @@ previousbutton.addEventListener('click', () => {
 });
 
 playbutton.addEventListener('click', () => {
-  //Howler.volume(0.1);
-  current_song.playpauseresume();
+  Howler.volume(0.1);
+  if(current_song == null && queqe.playqueqe.length != 0){
+    current_song = queqe.setcurrentsong();
+  }
+  if(current_song != null){
+    current_song.playpauseresume();
+  }
 });
 
 nextbutton.addEventListener('click', () => {

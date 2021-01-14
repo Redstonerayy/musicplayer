@@ -32,7 +32,7 @@ function createWindow (w, h, f, d, htmlfile) {
 
 
 app.on('ready', () => {
-    mainwindow = createWindow(1000, 800, true, false, "index.html");
+    mainwindow = createWindow(1000, 800, true, true, "index.html");
     // make quit condition
     mainwindow.on('close', () => {
       if(process.platform !== 'darwin'){
