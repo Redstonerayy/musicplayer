@@ -210,13 +210,15 @@ function droponsong(ev){
 function song(filename){
   //init
   previoustime = 0;
+  progressslider[0].value = 0;
   this.song = new Howl({
     src: [filename]
-  }).on('load', () => {
+  }).once('load', () => {
     //get duration and set range slider
     this.duration = this.song._duration;
     timeright.innerHTML = converttimeformat(Math.ceil(this.duration));
     progressslider[0].max = Math.ceil(this.duration);
+    current_song.playpauseresume();
   });
 
   //methods
@@ -272,10 +274,12 @@ function queqe(){
 
   //basic methods
   //play
-  this.setcurrentsong = () => {
-    console.log(musicfolderpath + this.currentsongname(false));
+  this.setsongcurrentindex = () => {
+    if(current_song != null){
+      current_song.song.unload();
+      console.log("unload");
+    }
     current_song = new song(musicfolderpath + this.currentsongname(false));
-    current_song.playpauseresume();
   }
 
   //queqe manipulation
@@ -338,7 +342,11 @@ function queqe(){
       return this.playqueqe[this.currentindex];
     } else {
       splittedsongid = this.playqueqe[this.currentindex].split(".");
-      return splittedsongid[0] + "." + splittedsongid[1];
+      filen = splittedsongid[0];
+      for (let i = 1; (i + 1) < splittedsongid.length; i++) {
+        filen += "." + splittedsongid[i];
+      }
+      return filen;
     }
   }
 
@@ -394,7 +402,7 @@ updatefilenames(musicfolderpath);
 
 //update slider
 previoustime = 0;
-sliderupdate = setInterval(updateslider, 500);
+setInterval(updateslider, 500);
 
 //update files in directory
 setInterval(updatefilenames, 5000, musicfolderpath);
@@ -420,21 +428,27 @@ loopbutton.addEventListener('click', () => {
 });
 
 previousbutton.addEventListener('click', () => {
-
+  if(queqe.currentindex != 0){
+    queqe.currentindex -= 1;
+    queqe.setsongcurrentindex();
+  }
 });
 
 playbutton.addEventListener('click', () => {
   Howler.volume(0.1);
   if(current_song == null && queqe.playqueqe.length != 0){
-    current_song = queqe.setcurrentsong();
-  }
-  if(current_song != null){
+    queqe.setsongcurrentindex();
+  } else if(current_song != null){
     current_song.playpauseresume();
+  } else {
   }
 });
 
 nextbutton.addEventListener('click', () => {
-
+  if(queqe.currentindex != queqe.playqueqe.length - 1){
+    queqe.currentindex += 1;
+    queqe.setsongcurrentindex();
+  }
 });
 
 randombutton.addEventListener('click', () => {
