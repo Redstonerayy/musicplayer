@@ -80,6 +80,15 @@ function converttimeformat(timesec) {
   }
 }
 
+function removelastpart(filename, fileending){//with ending 0, without ending 1
+  splittedsongid = filename.split(".");
+  filen = splittedsongid[0];
+  for (let i = 1; (i + fileending) < splittedsongid.length; i++) {
+    filen += "." + splittedsongid[i];
+  }
+  return filen;
+}
+
 function exportaszip() {
 }
 
@@ -122,7 +131,7 @@ function songwidget(parent, songname){
   songdiv.ondrop = droponsong;
   //title
   let songtitle = document.createElement("span");
-  songtitle.innerHTML = songname.split(".")[0];
+  songtitle.innerHTML = removelastpart(songname, 1);
   songtitle.style.color = "white";
   //image
   let kebabmenu = document.createElement("img");
@@ -157,7 +166,11 @@ function droponplay(ev, self) {
       var insertelement = document.getElementById(ev.dataTransfer.getData("id")).cloneNode(true);//does clone
       // all elements need a unique id. to be able to retrieve the song name, the
       // syntax is songname.clonenumber
-      songwidgetcount[insertelement.id] += 1;
+      if(songwidgetcount[insertelement.id] == undefined){
+        songwidgetcount[insertelement.id] = 1;
+      } else {
+        songwidgetcount[insertelement.id] += 1;
+      }
       insertelement.id += "." + (songwidgetcount[insertelement.id]).toString();
       var remove = false;//if the song is moved and needs to be removed from play queqe
     } else {
@@ -165,6 +178,7 @@ function droponplay(ev, self) {
       var remove = true;
     }
     //add to queqe
+    console.log(insertelement.id);
     queqe.addsong(insertelement.id);
     self.appendChild(insertelement); //append as last to target element
   }
@@ -178,7 +192,11 @@ function droponsong(ev){
   }
   if(document.getElementById(ev.dataTransfer.getData("id")).parentNode.className == "playlist"){
     var insertelement = document.getElementById(ev.dataTransfer.getData("id")).cloneNode(true);//does clone
-    songwidgetcount[insertelement.id] += 1;
+    if(songwidgetcount[insertelement.id] == undefined){
+      songwidgetcount[insertelement.id] = 1;
+    } else {
+      songwidgetcount[insertelement.id] += 1;
+    }
     insertelement.id += "." + (songwidgetcount[insertelement.id]).toString();
     var remove = false;//if the song is moved and needs to be removed from play queqe
   } else {
@@ -341,12 +359,7 @@ function queqe(){
     if(id){
       return this.playqueqe[this.currentindex];
     } else {
-      splittedsongid = this.playqueqe[this.currentindex].split(".");
-      filen = splittedsongid[0];
-      for (let i = 1; (i + 1) < splittedsongid.length; i++) {
-        filen += "." + splittedsongid[i];
-      }
-      return filen;
+      return removelastpart(this.playqueqe[this.currentindex], 1);
     }
   }
 
