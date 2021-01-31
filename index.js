@@ -20,16 +20,10 @@ function updatefilenames(path) {
   let promfilenames = new Promise((resolve, reject) => {
     fs.readdir(path, {withFileTypes: true}, (err, filenames) => {
       /*
-      //haven`t found a way to check if there are only files
-      //i assume all files are music files
-      for (let i = 0; i < a.length; i++) {
-        console.log(path);
-        if(isFile(path + a[i].name)){
-          temp.push(a[i]);
-        }
-      }
+      haven`t found a way to check if there are only files
+      i assume all files are music files
       */
-      resolve(filenames.map(file => file.name));
+      resolve(filenames.map(file => file.name));//with ending
     });
   }).then((filenames) => {
     if(files == filenames){
@@ -40,6 +34,7 @@ function updatefilenames(path) {
         removesongwidgets(removedfiles[i]);
       }
       for (var i = 0; i < newfiles.length; i++) {
+        songwidgetcount[newfiles[i]] = 0;
         songwidget(allsongs, newfiles[i]);
       }
     }
@@ -120,9 +115,9 @@ function readplaylistdata(filename){
 
 /* GUI  */
 
-function songwidget(parent, songname){
+function songwidget(parent, songname, adding=""){
   let songdiv = document.createElement("div");
-  songdiv.id = songname;
+  songdiv.id = songname + adding;
   songdiv.className = "song-widget";
   //append events
   songdiv.draggable = true;
@@ -162,57 +157,77 @@ function dragstart(ev) {
 function droponplay(ev, self) {
   ev.preventDefault(); //default ondrop is open as link
   if(ev.target == self){//only when directly dropped on this
+    var elid = ev.dataTransfer.getData("id");
     if(document.getElementById(ev.dataTransfer.getData("id")).parentNode.className == "playlist"){
-      var insertelement = document.getElementById(ev.dataTransfer.getData("id")).cloneNode(true);//does clone
-      // all elements need a unique id. to be able to retrieve the song name, the
-      // syntax is songname.clonenumber
-      if(songwidgetcount[insertelement.id] == undefined){
-        songwidgetcount[insertelement.id] = 1;
+      //dropped from a playlist
+      if(files.includes(elid)){
+        songwidgetcount[elid] += 1;
+        idwithoutending = elid;
       } else {
-        songwidgetcount[insertelement.id] += 1;
+          var idwithoutending = removelastpart(elid, 1);
+          songwidgetcount[idwithoutending] += 1;
       }
-      insertelement.id += "." + (songwidgetcount[insertelement.id]).toString();
-      var remove = false;//if the song is moved and needs to be removed from play queqe
+      var adding = "." + (songwidgetcount[idwithoutending]).toString();
+      songwidget(playqueqediv, idwithoutending, adding);//append as last to target element
+      var removefromplayqueqe = false;
+
     } else {
-      var insertelement = document.getElementById(ev.dataTransfer.getData("id"));//does not clone
-      var remove = true;
+      //dropped from playqueqe
+      //no need to make a new element, just append at end
+      var songwidgettomove = document.getElementById(elid);
+      songwidgettomove.parentNode.appendChild(songwidgettomove);
+      var removefromplayqueqe = true;
+    }
+    if(removefromplayqueqe){
+      // TODO: Remove
     }
     //add to queqe
-    console.log(insertelement.id);
-    queqe.addsong(insertelement.id);
-    self.appendChild(insertelement); //append as last to target element
+    queqe.addsong(elid + adding);
   }
 }
 
 function droponsong(ev){
+  ev.preventDefault();
+  //get song div which is the target
   if(ev.target.tagName != "DIV"){
     var target = ev.target.parentNode;
   } else {
     var target = ev.target;
   }
-  if(document.getElementById(ev.dataTransfer.getData("id")).parentNode.className == "playlist"){
-    var insertelement = document.getElementById(ev.dataTransfer.getData("id")).cloneNode(true);//does clone
-    if(songwidgetcount[insertelement.id] == undefined){
-      songwidgetcount[insertelement.id] = 1;
-    } else {
-      songwidgetcount[insertelement.id] += 1;
-    }
-    insertelement.id += "." + (songwidgetcount[insertelement.id]).toString();
-    var remove = false;//if the song is moved and needs to be removed from play queqe
-  } else {
-    var insertelement = document.getElementById(ev.dataTransfer.getData("id"));//does not clone
-    var remove = true;
-  }
-  //add to queqe
-  if(remove){
-    let songdivs = target.parentNode.children;
-    droppedon = songdivs.indexOf(target);
-    indexel = songdivs.indexOf(insertelement);
-    queqe.removesong(indexel);
-    queqe.addsong(insertelement.id, droppedon + 1);
-  }
+  //
+  var elid = ev.dataTransfer.getData("id");
 
-  target.parentNode.insertBefore(insertelement, target.nextSibling); //append after target element
+  if(document.getElementById(elid).parentNode.className == "playlist"){
+    if(target.parentNode.className == "playlist"){
+      var songwidgettomove = document.getElementById(elid);
+      target.parentNode.insertBefore(songwidgettomove, target.nextSibling);
+
+    } else {//is dropped on a song in playqueqe
+      if(files.includes(elid)){
+        songwidgetcount[elid] += 1;
+      } else {
+          var idwithoutending = removelastpart(elid, 1);
+          songwidgetcount[idwithoutending] += 1;
+      }
+
+      var adding = "." + (songwidgetcount[idwithoutending]).toString();
+      songwidget(playqueqediv, idwithoutending, adding);
+      target.parentNode.insertBefore(document.getElementById(idwithoutending + adding), target.nextSibling); //append after target element
+
+      // TODO: Add to playqueqe
+
+    }
+  } else {//playqueqe
+    if(target.parentNode.className == "play-song-display"){
+      var songwidgettomove = document.getElementById(elid);
+      target.parentNode.insertBefore(songwidgettomove, target.nextSibling);
+
+      // TODO: Change position
+
+    } else {//is droppend on a song in a playlist
+      // TODO: Add it to playlist
+    }
+  }
 }
 
 
@@ -295,7 +310,6 @@ function queqe(){
   this.setsongcurrentindex = () => {
     if(current_song != null){
       current_song.song.unload();
-      console.log("unload");
     }
     current_song = new song(musicfolderpath + this.currentsongname(false));
   }
@@ -392,7 +406,7 @@ timeleft = document.getElementById('time-left');
 timeright = document.getElementById('time-right');
 
 allsongs = document.getElementById("allsongs");
-playqueqediv = document.getElementById("play-song-display");
+playqueqediv = document.getElementsByClassName("play-song-display")[0];
 
 /* variables  */
 current_song = null;
